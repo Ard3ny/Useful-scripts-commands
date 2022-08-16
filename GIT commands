@@ -1,0 +1,10 @@
+GIT commands
+
+git clone <url>             / git pull
+git add -A
+git status
+git commit -m "commit message"
+
+git push
+
+lazygit -m "change" 
