@@ -1,0 +1,333 @@
+Lnx-commands
+------------------------------------------------------------------------------------------------------------
+less /etc/passwd
+cat /etc/group
+etc/cron.daily/
+etc /sudoers
+Vim /etc/fstab                                                  //mount rules
+etc/chronyd.conf
+---------------------------------------------------------------------------------------n-------
+Change hostname && IP
+vi /etc/hostname
+vi /etc/sysconfig/network-scripts/ifcfg-eth0
+------------------------------------------------------------------------------------------------------------
+Checking a reasorces
+hostnamectl                                             //check OS version
+dmidecode | grep roduct
+ip a
+netstat -tulpn / ss -tulpn
+ss
+who         
+w			                                                //uptime,users,load avrg cpu
+top	/ htop		                                                  //aktivne zobrazuje procesy
+free 
+lscpu
+cat /proc/cpuinfo
+     /proc/meminfo
+------------------------------------------------------------------------------------------------------------
+***********************************FILESYSTEM MANAGEMENT***********************************
+cfdisk                                                      //utility for manaing disk space
+ncdu                                                        //upgrade from du 
+
+lsblk			                                            //info about all hdd devices a mountpoints
+blkid                                                            //to get UUID of disk
+df -h
+watch df -h                                                       //renew every 2 sec
+
+CREATE PATRITION for MBR
+sudo fdisk -l
+sudo fdisk /dev/sdb
+n
++2G
+w
+//then format partition
+sudo mkfs.ext4 /dev/sdb1
+
+
+CREATE PATRITION for GPT
+sudo gdisk /dev/sdb
+n
++2G
+w
+sudo mkfs.ext4 /dev/sdb1
+
+
+------
+Make physical volume                                                        //rozne disky 
+pvcreate /dev/vdd1
+-----
+Make volume group                                                           //rozne disky spolu vytvoria volume group
+vgcreate TESTVG /dev/vdd1
+vgdisplay
+vgs                 //list of aviable space
+pvremove /dev/vdc1                                                          //for remove
+vgreduce TestVG /dev/vdc1                                                   //for remove
+
+---------
+Create and extend logical volume
+lvcreate -nTestLV -L 5G TestVG
+lvextend -r -L 35G /dev/mapper/bla bla podla toho co bolo v df
+lvremove /dev/TestVG/TestLV                                                 //for remove
+
+//and mount it
+$ sudo mount UUID=39ea80c4-e748-47eb-835c-64025de53e26 /mnt/uuidtest 
+$ sudo vi /etc/fstab
+//umount
+sudo umount
+wipefs --all --force /dev/sdc
+
+----------------------------------------------------------------------------------------------
+MULTIPLE LOGS TOGETHER
+
+df -i
+tar -czvf file.tar.gz cvd*.txt
+gzip -c bla > bla.gz
+----------------------------------------------------------------------------------------------
+CLEAR LOGS
+
+: > /var/log/messages
+----------------------------------------------------------------------------------------------
+FIND THE LARGEST INODES FILE
+for i in /*; do echo $i; find $i | wc -l; done
+
+DELETE INODES BY DATE
+ls -ltr | head -1000 | awk '{print $9}' | xargs rm 
+----------------------------------------------------------------------------------------------
+GENERATE RANDOM DATA OF SPECIFIC SIZE
+fallocate -l 10M
+dd if=dev/urandom of=random.data bs=4M count=10000
+----------------------------------------------------------------------------------------------
+
+FIND AND DELETE FILES THAT ARE OPENED AND DELETED               //RH problem when u delete file over filemanager and file is still open by a procces exm. not finished gziping
+lsof +L1
+lsof | grep '(deleted)'
+: > "/proc/$pid/fd/$fd"
+----------------------------------------------------------------------------------------------
+***********************************SERVICES***********************************
+
+service start/stop 		//zapnme v tomto momente proces
+enable enable/disable 		//pri boot time 
+service servicename status
+systemctl status servicename
+-------------------------------------------------------------------------------------------------------------
+***********************************PATCHING***********************************
+zypper ref && zypper up                                       //Suse 
+yum clean all && yum repolist && yum update                     //RH
+apt-get update && apt-get upgrade                           //debian
+
+
+yum clean all && yum update --downloadonly
+
+
+YUM natiahnutie UPDATES a preserving them more than for a day
+yum update --download-only
+vi /etc/yum.conf
+#metadata_expire=7d 
+yum repolist enabled -v
+
+
+EXLUDING PACKAGES
+vi /etc/yum.conf
+na posledny line pridat "exclude=kernel*"
+zypper update --exclude=mypackage
+
+NESYNCUJE REPO na RHEL
+/etc/yum.repos.d/      //tu su repos ktore sa maju aktualizovat
+Ked neviem syncnut tak ist na server ako napr c02ptmr a catnut a prekopirovat obsah or7.repo na server kde to chcem
+
+Fix Yum Error: database disk image is malformed
+#1 yum clean dbcache
+#2yum clean all			#delete entries in /var/cache/yum/ directory.
+#2yum clean metadata		#clear XML metadeta		
+#2yum clean dbcache		#clear the cached files for database
+#2yum makecache		        #make cache
+-------------------------------------------------------------------------------------------------------------
+ANSIBLE
+sudo vi /etc/ansible/hosts
+/home/unixadm/ansible
+ansible-playbook patching
+ansible R2 -a "uptime"
+----------------------------------------------------------------------------------------------
+***********************************USERS AND GROUPS MANAGEMENT***********************************
+ZMENA PASSWD a EXPIROVANIE HESLA
+
+passwd user
+chage -d 0 user
+chage -l user           //all info about the user passwd info
+------------------------------------------------------------------------------------------------------------
+PRIDANIE/OSTRANENIE USERA/GROUPY
+ # /usr/sbin/useradd -u 12345 -g users -d /home/user01 -m -c "User Dude - UNIX Administrator -" -s /bin/bash -p '$1$01UBH4p3$sY7PTSrW1rdfQ68E1' user01
+
+sudo useradd -m meno.priez.loc -G backup -s /bin/bash -c "komentar"
+userdel -r meno.priez.loc
+sudo groupadd test kit
+sudo groupdel test
+sudo usermod -a -G group user_name  
+
+
+
+------------------------------------------------------------------------------------------------------------
+AIX user unlock
+
+lsuser username
+smit user
+-----_---------------------------------------------------------
+GRUPA SUDO PRIDELIT 
+
+visudo
+Allows ppl in group to run commands
+%backup      ALL=(ALL)    ALL
+
+//wheel je group ktora sa s pomocou sudo moze stat inym userom
+----------------------------------------------------------------------------------------------
+CHANGE OF OWNER GROUP + RIGHTS
+chown root:userG /etc/bla && chmod g+rw /etc/bla
+chmod 754 fuj			//pre owner vetko, group read,execute, all other read
+chmod +x
+x=1,w=2,r=4
+
+----------------------------------------------------------------------------------------------
+ZORADIT FILES OD NAJVACSIEHO
+du -ahx . | sort -rh | head -10
+ls -lSah
+----------------------------------------------------------------------------------------------
+VERSION OF OS
+uname -r
+cat /etc/redhat-release
+cat /etc/SuSE-release
+cat /proc/version
+cat /etc/os-release
+----------------------------------------------------------------------------------------------
+NTP / chronyd
+ntpstat
+ntpq -p
+timedatectl
+tzselect                                    //setup new time zone
+----------------------------------------------------------------------------------------------
+FIND with exec
+find . -name Desktop -type f/d -exec rm {} +
+//exec execute for every item
+//{} placeholder do ktoreho sa vklada input findu
+// + terminating find command vzdy ked sa pouziva exec, moze sa pouzit aj /;
+--------------------------------------------------------------------------------------------
+SED - text manipulation
+sed -i 's/Ananas/olivy/g' text.txt
+//-i prepise existing file, -s search for a string, 
+sed -i 's./bla./bla'   //keby chcem lomitka prepisat napr staci hocijaky delimeter ako .,|
+----------------------------------------------------------------------------------------------
+AWK - data manipulation
+awk '{print $1,$3}' text.txt            //1st and 3rd column
+awk -F':' '{print $2}' /etc/passwd      //zmena spacu ako delimetera na dvojbodku
+----------------------------------------------------------------------------------------------
+CRON
+/etc/cron.daily
+crontab -l
+crontab-generator.org
+
+(m)(h)(dom)(moy)(wd)(cmd)	//m je minute, h je hodina kedy,day of the month, wd aký den
+			               	//* znamena every possible value
+15 10 * * 3-5 echo "blala"
+----------------------------------------------------------------------------------------------
+ALIAS
+alias ll="ls -lh"   
+alias                           //list of all aliases
+alias extip="curl icanhazip.com"            //external ip 
+alias install="sudo apt install"
+alias speedtest="curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -"
+#FOR PERNAMENT CHANGES /home/bla/.bashrc
+alias ducks='du -cks * | sort -rn | head'
+----------------------------------------------------------------------------------------------
+NICENESS
+nice -n 10 task		
+renice	-5 PID
+----------------------------------------------------------------------------------------------
+REAR backup
+etc/rear/local.conf
+OUTPUT=ISO
+BACKUP=NETFS
+BACKUP_URL=".....
+
+weekly crontab nastavit
+crontab -l 
+crontab -e
+8 23 * * 6 /sbin/rear mkbackup
+
+Spustit backup
+/sbin/rear -v mkbackup
+----------------------------------------------------------------------------------------------
+
+FG and BG tasks
+ctrl + z        //posle proces do backround
+fg              //to bring it back
+htop &          //imidiatly start proces in the bg
+jobs            //list of all proceses running
+----------------------------------------------------------------------------------------------
+COPY FILES TO DIFFERENT SERVER
+rsync 
+----------------------------------------------------------------------------------------------
+UMASK
+vi ~/.bash_profile
+//na koniec file pridat 
+umask 077
+----------------------------------------------------------------------------------------------
+shutdown -h now         //need to halt system so USE h flag
+----------------------------------------------------------------------------------------------
+
+Full /boot folder
+
+rpm -qa | grep -i kernel
+#remove the old ones
+rpm -e kernel version
+----------------------------------------------------------------------------------------------
+Search for a specific string in files
+grep -ir 'string' /tmp
+grep -ir --include=*txt 'string_we_search' /tmp
+
+
+----------------------------------------------------------------------------------------------
+TERMINAL tricks
+ctrl + a	//posun na začiatok vety v shell 
+ctrl + e	//posun na koniec
+ctrl + r	//reverse search, ktory hlada v historii pouiych cmds    ctrl + g naspat
+ctrl + c 	//cmd interupt
+ctrl + b        //backword vo vete o slovo rozdelene o medzeru alebo znak
+ctrl + f        //farword vo vete o slovo rozdelene o medzeru alebo znak
+ctrl + l        //ekvivalent cmd clear
+ctrl + u        //delete entire line in terminal
+
+----------------------------------------------------------------------------------------------
+VI
+o					//new line 
+dd					//delete
+yy					//yenk aka copy
+p					//paste
+v					//visual mode where i can copy more lines
+u					//undo
+ctrl + r 				//redo
+gg					//curscor to the frist line of document
+G					//to the last line of the document
+/text					//search for a word text downards
+?text					//search for a word text upwords
+^					//bring cursor to begining of line
+$					//bring cursor to the end of the line
+:%s/old/new/g			//sed words old for words new
+Ked zabudnem sudo:
+    apt update
+    sudo !!
+    
+Font inscrease: ctrl + shift + "+"
+
+CLOSE VIM WITH SAVING   shift zz
+CLOSE VIM WITH SAVING   shift zx
+
+
+
+
+
+
+--------------------------------------------------------------------------
+Proxmox commands
+qm list
+qm config <id>
+qm guest cmd <> network-get-interfaces | grep ip
+for i in {100..120}; do qm guest cmd $i network-get-interfaces | grep ip; done
