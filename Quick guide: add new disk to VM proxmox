@@ -1,0 +1,9 @@
+#Add a new disk in the hardware of VM
+lsblk
+fdisk /dev/sdb  
+      n, p, w
+pvcreate /dev/sdb1
+vgextend debian11-template-vg /dev/sdb1
+vgdisplay
+df -h
+lvextend -r -L +5G /dev/mapper/debian11--template--vg-var
