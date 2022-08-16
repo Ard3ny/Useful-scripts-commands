@@ -1,0 +1,92 @@
+chmod +x test.sh			//prida prava na execute
+sublime ctrl + /			//zakomentovanie viac riadkov
+
+
+0   	standart IN
+1	standart OUT
+2	standart Error
+
+echo  "Hello there"
+echo  "Hello there" > hello.txt                         //redirected output do suboru hello
+echo  "Hello there" >> hello.txt 			//bude pridavat veci do suboru hello nie ich prepisovat 
+
+
+wc -l < testfile 					//vezmeme input testfile a vlozime do word counteru.. ekivalent cat testfile | wc -l 
+(cat testfile | wc -l) && echo "done"			//AND, cize oba musia byt true
+(cat testfile | wc -l) || echo "done"			//OR, cize ak je len jedno pravda tak sa dokonci
+
+valuable is something that point to the value
+somenumber=6
+echo $somenumber
+echo "This is my ${somenumber}th beer"			//{} znacia to ze to je premenna a vdaka tomu mozme oddelit vetu a premennu napr
+
+
+echo "there are `wc -l < /etc/group` lines in /etc/group file  			//`` cokolvej dam medzi tieto znaky tak konzola berie ako command
+
+
+num_lines=`ls &HOME | wc -l`
+echo &num_lines
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+#!/bin/bash
+exit   			//vracia nejaku value
+$#			//number of arguments
+$0			//nazov skriptu
+$1			//prvy napisane argument do terminalu
+$2			// druhy napisany argument ....
+
+##helpers
+ && and		//AJ PRVE AJ DRUHE musia byt true cize ak prve failne tak druhe sa ani nevykona
+|| or            	// BUD PRVE ALEBO DRUHE
+
+echo "hi" || echo "this wont happen"
+$(ls nonexistinggile) || echo "this will happen"
+echo $(pwd) && echo "this also happens"
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+## Strings
+= equal
+!= not equal
+
+if [ "$str1" = "#str2" ]; then
+	echo "${str1} is equal to ${str2}!"
+
+fi
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+#No Null (-n) or Zero length (-z)
+notnully="this is something(not nothing)"
+nully=""
+
+if [ -n"notnully" ]; then
+	echo "this is not nully"
+
+fi
+
+if [ -z"nully" ]; then
+	echo "this is nully"
+	
+fi
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+## Integers						//interegrs sa pisu pismenami nie znakmi ako strings, v pripade dvojitej zatvorky (()) mozme pouzit znaky
+int1=1
+int2=7
+ 
+if [ $int1 -eq $int2 ]; then
+	echo "${int1} is equal to ${int2}!"
+
+fi
+
+if [ $int1 -ne $int2 ]; then
+	echo "${int1} is not equal to ${int2}!"
+
+fi
+
+if (( $int1 != $int2 )); then
+	echo "${int1} is not equal to ${int2} v dvojitych zatvorkach"
+
+fi
+
+
