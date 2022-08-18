@@ -1,0 +1,13 @@
+mysql -u user
+CREATE DATABASE bookstack;
+CREATE USER ‘bookstack’@’localhost’ IDENTIFIED BY ‘password’;
+GRANT ALL ON bookstack.* TO 'bookstack'@'localhost';FLUSH PRIVILEGES;
+
+
+
+
+
+
+
+DROP DATABASE strongdm;
+DROP USER 'local_user'@'localhost';
