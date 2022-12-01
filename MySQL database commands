@@ -4,10 +4,17 @@ CREATE USER ‘bookstack’@’localhost’ IDENTIFIED BY ‘password’;
 GRANT ALL ON bookstack.* TO 'bookstack'@'localhost';FLUSH PRIVILEGES;
 
 
-
-
-
-
-
 DROP DATABASE strongdm;
 DROP USER 'local_user'@'localhost';
+
+
+ select * from bs_person;
+select * from bs_person where user_id='69';
+
+truncate table bs_ext_person;                          //empty the table but keep atributes
+
+update bs_user                                          
+set valid_to = NULL
+where id = '584';
+
+update ldap_sync set sync_status = '2' where id = '628';
