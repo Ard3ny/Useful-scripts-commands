@@ -1,0 +1,12 @@
+Check and fix reserved space on xtslike filesystems
+
+tune2fs -l /dev/mapper/centos_centos7--template-opt
+
+Reserved block count:     2767880 //which is 5% by default
+
+//lowering to 2% , do on large filesystem only where 3% can mean 10s of GBs
+
+tune2fs -m2 /dev/mapper/centos_centos7--template-opt 
+
+
+
