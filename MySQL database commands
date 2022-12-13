@@ -1,4 +1,5 @@
-mysql -u user
+su - postgres
+psql -d mattermost
 CREATE DATABASE bookstack;
 CREATE USER ‘bookstack’@’localhost’ IDENTIFIED BY ‘password’;
 GRANT ALL ON bookstack.* TO 'bookstack'@'localhost';FLUSH PRIVILEGES;
