@@ -1,0 +1,46 @@
+------------------Extending space tldr------------------
+ (Increrement space in proxmox -> enlarge the partition size in the VM -> Extend the filesystem in the VM)
+
+->Incremeted space in proxmox hardware GUI
+
+->In the VM
+
+
+#Info commands about partitions    
+dmesg | grep sda
+fdisk -l /dev/sda 
+lsblk
+
+#Format the new space (n,p,defaults,w)
+fdisk /dev/sda                        
+
+-->Using new partition and extending VG -volume group (a)
+-->Using an existing partition and resizing it (b)
+
+a)
+#Check the new filesystem partition and remember the device name 
+fdisk -l /dev/sda     or lsblk 
+
+#Create physical volume, ? = number                           
+pvcreate /dev/sda? 
+
+#List out volume groups on the system
+vgdisplay                                    
+
+#Extend volume group   
+vgextend VG_name /dev/sda?
+
+#List out logical Volumes
+lvdisplay
+
+#Extend and resize logical volume
+#logical volume (r for resize eqivalent to resize2fs, -L to extend volume by and size         
+lvextend -r -L +10G /dev/mapper/logical_volume_name
+
+#or extend and resize all in % 
+lvextend -r -l +100%FREE /dev/mapper/logical_volume_name
+
+b) (to be continuted) 
+
+
+
