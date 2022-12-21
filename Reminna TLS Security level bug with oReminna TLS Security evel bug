@@ -1,0 +1,10 @@
+If you ever have problem with Reminna when you cant RDP to Windows (usually older machine) and while troubleshooting you encounter these errors:
+
+"Could not connect via tls see debug remina"
+or
+[ERROR][com.freerdp.core] - transport_connect_tls:freerdp_set_last_error_ex
+
+Either:
+Fix (a) Go to: Edit -> "Advanced" tab, change "Security protocol negotiation" from Automatic to either NLA,RDP,TLS (try all of them)
+Fix (b)" Go to: Edit -> "Advanced" tab, change the "TLS Security Level" from default to "0 - Windows 7 compatible". Then click the "Save and Connect" button.
+Fix (c): Combination of Fix(a) and Fix(b) (Usually first or second always works, but just in the case)
