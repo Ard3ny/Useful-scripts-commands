@@ -1,0 +1,20 @@
+#Romove existing package and GO version
+
+sudo apt-get remove golang-go
+sudo apt-get remove --auto-remove golang-go
+sudo rm -rvf /usr/local/go
+
+#Download and install new Go version
+wget https://dl.google.com/go/go1.19.linux-amd64.tar.gz
+sudo tar -xvf go*
+
+#Setup GO
+sudo mv go /usr/local
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+source ~/.profile
+
+#Verify new version
+go version
+go env
