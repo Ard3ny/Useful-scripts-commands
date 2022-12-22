@@ -8,3 +8,15 @@ git commit -m "commit message"
 git push
 
 lazygit -m "change" 
+
+
+------------------------------------
+Merging 2 git repos into 1
+
+cd repo2
+git checkout master
+git remote add r1remote **url-of-repo1**
+git fetch r1remote
+git merge r1remote/master --allow-unrelated-histories
+git remote rm r1remote
+After that repo2/master will contain everything from repo2/master and repo1/master, and will also have the history of both of them.
