@@ -1,0 +1,10 @@
+In case you get this error 
+"mailx -S not found"
+
+Or you simple want to authenticate to smtp server and send mail in line command use this:
+
+Debian and Ubuntu have replaced Heirloom mailx with s-nail mailx. Both support that option. But there are several other mailx commands from other packages which do not, including the GNU Mailutils mailx which you have apparently unknowingly switched to.
+s-nail replaces mail AND mailx. In the other peoples versions "mail" and "mailx" are simply symlinks to s-nail
+
+apt-get install s-nail
+s-nail echo "Proxmox VM resource report" | "report@thiss.tech" -s "Proxmox VM resource report" -S smtp="mail.test.com:587" -S smtp-auth=login -S smtp-auth-user=report@test.com -S smtp-auth-password=YOurpasswrd -S ssl-verify=ignore -S smtp-use-starttls -a "/root/VMScripts/report.txt" reciever@test.com

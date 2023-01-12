@@ -1,0 +1,15 @@
+Screen how to
+Make new Screen
+Screen -S name
+
+List screen jobs
+screen -ls 
+
+Re-enter 
+screen -r screen_ID
+
+Co-reEnter with colege
+screen -x screen_ID 
+
+Leave screen 
+ctrl + ad 

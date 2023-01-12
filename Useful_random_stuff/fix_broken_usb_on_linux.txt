@@ -1,0 +1,9 @@
+Fix a broken/corrupted USB on linux
+
+ls /dev/disk/by-id/usb*
+
+sudo fdisk /dev/disk/by-id/usb-Generic-_SD_MMC_MS_MSPRO_20060413092100000-0:0
+o
+n, p, defaults, w
+
+sudo mkfs.ntfs /dev/sda1 
