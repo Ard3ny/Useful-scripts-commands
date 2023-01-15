@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#backup script for wordpress site 
+#using WP CLI && rsync incremental backups
+
+#setup keys
+
+#variables
+destination_ssh_host="user@IPaddress
+source_path="/var/www/html/wordpress"
+destination_path="/root/backup/"
+WPCLI="~/bin/wp"
+EXCLUDE="/var/www/html/wordpess/wp-content/cache/*"
+EXCLUDE2="/var/www/html/wordpess/wp-content/error_log"
+
+
+#export database using wp cli (you can also use mysql it doesnt really matter)
+$WPCLI db export  |~/var/www/html/wordpress/ --allow-root
+
+#rsync all of the filess to the remote server
+#with the exception of cache and error_log
+#rsync flags: a-archive, v-verbose, z-compress
+rsync -avz --exclude $EXCLUDE --exclude $EXCLUDE2 $source_path $destination_ssh_host:$destination_path 
+
+#add script to the crontab (run once a day at 00:00)
+#crontab -e
+#0 0 * * *  ./backup_script.sh
