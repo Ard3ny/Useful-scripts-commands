@@ -1,0 +1,302 @@
+Nginx in HA
+
+
+1. both nginx running
+2. HA proxies nodes:
+
+#HA NODES: Install keepalived, haproxy on both servers
+dnf install keepalived
+
+vim /etc/keepalived/
+
+vrrp_script chk_haproxy {
+  script " killall -0 haproxy"  # check the haproxy process
+  interval 2 # every 2 seconds
+  weight 2 # add 2 points if OK
+}
+
+vrrp_instance VI_1 {
+  interface eth0 # interface to monitor
+  state BACKUP # MASTER on ha1, BACKUP on ha2
+  virtual_router_id 51
+  priority 100 # 101 on ha1, 100 on ha2
+  advert_int 1
+  virtual_ipaddress {
+    10.77.0.170 # virtual ip address which they will share
+  }
+  track_script {
+    chk_haproxy
+  }
+}
+
+
+
+#HA NODES: install haproxy  (on both servers)
+dnf install haproxy
+vim /etc/haproxy/haproxy.cfg 
+
+cat  /etc/haproxy/haproxy.cfg
+#---------------------------------------------------------------------
+# Example configuration for a possible web application.  See the
+# full configuration options online.
+#
+#   https://www.haproxy.org/download/1.8/doc/configuration.txt
+#
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+global
+    # to have these messages end up in /var/log/haproxy.log you will
+    # need to:
+    #
+    # 1) configure syslog to accept network log events.  This is done
+    #    by adding the '-r' option to the SYSLOGD_OPTIONS in
+    #    /etc/sysconfig/syslog
+    #
+    # 2) configure local2 events to go to the /var/log/haproxy.log
+    #   file. A line like the following can be added to
+    #   /etc/sysconfig/syslog
+    #
+    #    local2.*                       /var/log/haproxy.log
+    #
+    log         127.0.0.1 local2
+    nbproc 1 
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        haproxy
+    group       haproxy
+    daemon
+    nbthread 2
+    cpu-map auto:1/1-2 0-1
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    mode                    tcp
+    log                     global
+    option                  tcplog
+    option                  dontlognull
+    option                  redispatch
+    option http-server-close
+    #option forwardfor
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 3000
+
+#---------------------------------------------------------------------
+# main frontend which proxys to the backends
+#---------------------------------------------------------------------
+frontend http-in
+    bind *:80
+    mode tcp
+    option tcplog
+    default_backend http-servers
+
+frontend https-in
+    bind *:443
+    mode tcp
+    option tcplog
+    default_backend https-servers
+
+    #you can also configure pop,imap,active-sync ports for mails   
+
+
+frontend submission-in
+    bind *:587
+    mode tcp
+    no option http-server-close
+    default_backend submission-servers
+
+frontend imap-in
+    bind *:143
+    mode tcp
+    no option http-server-close
+    default_backend imap-servers
+
+frontend imaps-in
+    bind *:993
+    mode tcp
+    no option http-server-close
+    default_backend imaps-servers
+
+
+#---------------------------------------------------------------------
+# static backend for serving up images, stylesheets and such
+#---------------------------------------------------------------------
+backend http-servers
+    balance roundrobin
+    mode tcp
+    server nginxp01 10.77.0.12:80 check send-proxy #IP of nginx1
+    server nginxp02 10.77.0.13:80 check send-proxy #ip of nginx2
+#
+backend https-servers
+    balance roundrobin
+    mode tcp
+    server nginxp01 10.77.0.12:443 check send-proxy  #IP of nginx1
+    server nginxp02 10.77.0.13:443 check send-proxy  #IP of nginx2
+
+ #you can also configure pop,imap,active-sync ports for mails   
+
+backend submission-servers
+    mode tcp
+    no option http-server-close
+    balance roundrobin
+    server mail02 10.77.0.18:587 check  #ip of smtp mail server
+
+backend imap-servers
+    mode tcp
+    no option http-server-close
+    balance roundrobin
+    server mail02 10.77.0.18:143 check
+
+backend imaps-servers
+    mode tcp
+    no option http-server-close
+    balance roundrobin
+    server mail02 10.77.0.18:993 check
+
+
+#---------------------------------------------------------------------
+# round robin balancing between the various backends
+#---------------------------------------------------------------------
+listen stats # Define a listen section called "stats"
+    bind :9000 # Listen on localhost:9000
+    mode http
+    stats enable  # Enable stats page
+    stats hide-version  # Hide HAProxy version
+    stats realm test-hap01\ Statistics  # Title text for popup window
+    stats uri /haproxy_stats  # Stats URI
+    stats auth username:password  # Authentication credentials
+
+
+#HA node: install lsync on master node
+dnf install lsyncd
+vim /etc/lsyncd.conf
+
+----
+-- User configuration file for lsyncd.
+--
+-- Simple example for default rsync, but executing moves through on the target.
+--
+-- For more examples, see /usr/share/doc/lsyncd*/examples/
+-- 
+settings {
+logfile = "/var/log/lsyncd/lsyncd.log",
+statusFile = "/var/log/lsyncd/lsyncd-status.log",
+statusInterval = 1
+}
+
+-- IP adress of the other node! But not the virtual one!
+targetList = {
+        "10.77.0.50",
+}
+
+for _, servers in ipairs(targetList) do
+sync{	default.rsyncssh,
+	source="/etc/haproxy/", 
+	host=servers, 
+	targetdir="/etc/haproxy/",
+	delay=0,
+--	delete="running",
+	rsync     = {
+		protect_args  = false,
+		owner = true,
+		perms = true
+	}
+}
+end
+
+
+
+if u are using root which you shouldnt u have to change sshd configuration
+vim /etc/ssh/sshd_config
+PermitRootLogin yes
+
+and dont forget to setup keys
+
+
+
+
+
+
+
+
+
+
+
+
+2. Nginx node: install lsyncd (on the master node)
+dnf install lsyncd
+vim /etc/lsyncd
+
+----
+-- User configuration file for lsyncd.
+--
+-- Simple example for default rsync, but executing moves through on the target.
+--
+-- For more examples, see /usr/share/doc/lsyncd*/examples/
+-- 
+settings {
+logfile = "/var/log/lsyncd/lsyncd.log",
+statusFile = "/var/log/lsyncd/lsyncd-status.log",
+statusInterval = 1
+}
+
+-- IP adress of the other node!
+targetList = {
+        "10.77.0.66",
+}
+
+for _, servers in ipairs(targetList) do
+sync{	default.rsyncssh,
+	source="/etc/nginx", 
+	host=servers, 
+	targetdir="/etc/nginx",
+	delay=0,
+--	delete="running",
+	rsync     = {
+		protect_args  = false,
+		owner = true,
+		perms = true
+	}
+}
+end
+
+for _, servers in ipairs(targetList) do
+sync{   default.rsyncssh,
+        source="/usr/share/nginx/html/",
+        host=servers,
+        targetdir="/usr/share/nginx/html/",
+        delay=0,
+--      delete="running",
+        rsync     = {
+                protect_args  = false,
+                owner = true,
+                perms = true
+        }
+}
+end
+
+
+
+3. systemctl enable --now lsyncd
+systemctl status lsyncd
+
+4. if u are using root which you shouldnt u have to change sshd configuration
+vim /etc/ssh/sshd_config
+PermitRootLogin yes
+
+and dont forget to setup keys

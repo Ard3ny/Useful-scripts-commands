@@ -1,0 +1,15 @@
+SCP transfer error
+scp: Ensure the remote shell produces no output for non-interactive sessions.
+
+This is long lasting problem due to
+RHEL box's .bashrc having a line echo "running .bashrc" -- or echoing everthing
+
+
+
+#Simply change the /etc/ssh/sshd_config file and change the SFTP subsystem:
+
+#Subsystem sftp /usr/lib/openssh/sftp-server
+Subsystem sftp internal-sftp
+
+#And restart sshd service
+Systemctl restart sshd
