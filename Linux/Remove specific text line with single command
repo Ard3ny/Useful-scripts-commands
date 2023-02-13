@@ -1,0 +1,1 @@
+sed -i '251d' /home/filip/.ssh/known_hosts
