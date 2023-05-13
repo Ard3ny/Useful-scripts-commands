@@ -1,0 +1,17 @@
+DB TABLE FIX
+
+2023-04-06 15:42:07 3630 [ERROR] mysqld: Table './wordpress/wp_wfBlocks7' is marked as crashed and last (automatic?) repair failed
+
+error message:
+#run table check
+mysqlcheck -uroot -p DBname
+
+wordpress.wp_wfBlocks7
+warning  : Table is marked as crashed and last repair failed
+
+
+
+FIX
+mysql -u root -p
+use dnName;
+REPAIR TABLE `wordpress.wp_wfBlocks7`;

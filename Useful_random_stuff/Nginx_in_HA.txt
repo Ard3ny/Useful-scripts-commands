@@ -7,7 +7,7 @@ Nginx in HA
 #HA NODES: Install keepalived, haproxy on both servers
 dnf install keepalived
 
-vim /etc/keepalived/
+vim /etc/keepalived/keepalived.conf
 
 vrrp_script chk_haproxy {
   script " killall -0 haproxy"  # check the haproxy process
@@ -33,6 +33,8 @@ vrrp_instance VI_1 {
 
 #HA NODES: install haproxy  (on both servers)
 dnf install haproxy
+sudo apt -y install haproxy 
+
 vim /etc/haproxy/haproxy.cfg 
 
 cat  /etc/haproxy/haproxy.cfg
@@ -185,7 +187,7 @@ listen stats # Define a listen section called "stats"
 #HA node: install lsync on master node
 dnf install lsyncd
 vim /etc/lsyncd.conf
-
+vim /etc/lsyncd/lsyncd.conf.lua   #pre debian aj zlozku a file musi byt lua
 ----
 -- User configuration file for lsyncd.
 --
