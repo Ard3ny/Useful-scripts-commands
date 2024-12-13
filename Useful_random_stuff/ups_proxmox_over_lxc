@@ -1,7 +1,5 @@
 #how to configure UPS on proxmox over LXC with USB passthrough
 
-I managed to make it work over LXC cotnainer.
-
 I used peanut from proxmox scripts to have extra dashboard bcs why not, but you can make it work with any LXC
 
 bash -c "$(wget -qLO - https://github.com/community-scripts/ProxmoxVE/raw/main/ct/peanut.sh)"
