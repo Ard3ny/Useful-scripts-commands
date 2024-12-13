@@ -1,0 +1,204 @@
+#how to configure UPS on proxmox over LXC with USB passthrough
+
+I managed to make it work over LXC cotnainer.
+
+I used peanut from proxmox scripts to have extra dashboard bcs why not, but you can make it work with any LXC
+
+bash -c "$(wget -qLO - https://github.com/community-scripts/ProxmoxVE/raw/main/ct/peanut.sh)"
+
+dont go with default settings, the LXC needs to be priviliged.
+
+AFter it spawns run on the PVE (gandalf)
+LXC 115 aka peanut is our container
+```
+root@gandalf:~# cat /etc/pve/lxc/115.conf
+#http%3A//10.1.1.21%3A3000
+#
+#user   
+#pass  
+arch: amd64
+cores: 2
+features: nesting=1
+hostname: peanut
+memory: 2048
+net0: name=eth0,bridge=vmbr0,gw=10.1.1.1,hwaddr=BC:24:11:9B:06:8C,ip=10.1.1.21/24,type=veth
+onboot: 1
+ostype: debian
+rootfs: pool-fast:subvol-115-disk-0,size=4G
+swap: 512
+tags: proxmox-helper-scripts
+lxc.cgroup2.devices.allow: a
+lxc.cap.drop: 
+lxc.cgroup2.devices.allow: c 188:* rwm
+lxc.cgroup2.devices.allow: c 189:* rwm
+lxc.mount.entry: /dev/serial/by-id  dev/serial/by-id  none bind,optional,create=dir
+lxc.mount.entry: /dev/ttyUSB0       dev/ttyUSB0       none bind,optional,create=file
+lxc.mount.entry: /dev/ttyUSB1       dev/ttyUSB1       none bind,optional,create=file
+lxc.mount.entry: /dev/ttyACM0       dev/ttyACM0       none bind,optional,create=file
+lxc.mount.entry: /dev/ttyACM1       dev/ttyACM1       none bind,optional,create=file
+lxc.cgroup2.devices.allow: c 189:2 rwm # UPS
+lxc.mount.entry: /dev/bus/usb/001 dev/bus/usb/001 none bind,optional,create=dir,mode=0666 # UPS
+lxc.hook.pre-start: sh -c "chown -R 100000:111003 /dev/bus/usb/001" # create a host gid for lxc_usb1_shares
+root@gandalf:~# 
+
+```
+
+Then I went with the OP steps
+On the LXC run
+```
+apt-get install usbutils
+apt-get install nut
+
+root@peanut:~# lsusb 
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 001 Device 041: ID 0463:ffff MGE UPS Systems UPS
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+
+
+root@peanut:~# nut-scanner -U
+Scanning USB bus.
+[nutdev1]
+        driver = "usbhid-ups"
+        port = "auto"
+        vendorid = "0463"
+        productid = "FFFF"
+        product = "5E"
+        vendor = "EATON"
+        bus = "001"
+
+```
+
+I added ups.conf
+```
+vim /etc/nut/ups.conf
+
+[eaton9px]
+  driver = usbhid-ups
+  port = auto
+  vendorid = 0463
+  productid = FFFF
+```
+
+When it tried to restart service i got errors (service nut-server restart). SO i tried another service from googling around 
+```
+root@peanut:~# sudo systemctl status systemd-udevd
+○ systemd-udevd.service - Rule-based Manager for Device Events and Files
+     Loaded: loaded (/lib/systemd/system/systemd-udevd.service; static)
+     Active: inactive (dead)
+TriggeredBy: ○ systemd-udevd-control.socket
+             ○ systemd-udevd-kernel.socket
+  Condition: start condition failed at Thu 2024-12-12 22:27:52 CET; 1s ago
+             └─ ConditionPathIsReadWrite=/sys was not met
+       Docs: man:systemd-udevd.service(8)
+             man:udev(7)
+
+Dec 12 22:24:47 peanut systemd[1]: systemd-udevd.service - Rule-based Manager for Device Events and Files was skipped because of an unmet condition check (ConditionPathIsReadWrite=/sys).
+Dec 12 22:25:12 peanut systemd[1]: systemd-udevd.se
+```
+The main issue seems to be that /sys is read only, to fix that
+```
+ sudo mount -o remount,rw /sys
+sudo systemctl restart systemd-udevd
+```
+
+Aaandd its working
+```
+root@peanut:~# sudo systemctl status systemd-udevd
+● systemd-udevd.service - Rule-based Manager for Device Events and Files
+     Loaded: loaded (/lib/systemd/system/systemd-udevd.service; static)
+     Active: active (running) since Thu 2024-12-12 22:28:57 CET; 31s ago
+TriggeredBy: ● systemd-udevd-control.socket
+             ● systemd-udevd-kernel.socket
+       Docs: man:systemd-udevd.service(8)
+             man:udev(7)
+   Main PID: 1971 (systemd-udevd)
+     Status: "Processing with 20 children at max"
+      Tasks: 3
+     Memory: 2.6M
+        CPU: 76ms
+     CGroup: /system.slice/systemd-udevd.service
+             └─udev
+               ├─1971 /lib/systemd/systemd-udevd
+               ├─2044 "(udev-worker)"
+               └─2045 "(udev-worker)"
+Dec 12 22:28:57 peanut systemd[1]: Starting systemd-udevd.service - Rule-based Manager for Device Events and Files...
+Dec 12 22:28:57 peanut systemd-udevd[1971]: Using default interface naming scheme 'v252'.
+Dec 12 22:28:57 peanut systemd[1]: Started systemd-udevd.service - Rule-based Manager for Device Events and Files.
+```
+
+To make the /sys rw pernament
+```
+vim /etc/fstab
+sysfs /sys sysfs defaults 0 0
+```
+
+Dont forget to enable nut server
+```
+vim /etc/nut/nut.conf 
+MODE=standalone
+```
+
+
+Afte that I run
+```
+root@peanut:~# sudo upsdrvctl start
+Network UPS Tools - UPS driver controller 2.8.0
+Network UPS Tools - Generic HID driver 0.47 (2.8.0)
+USB communication driver (libusb 1.0) 0.43
+Duplicate driver instance detected (PID file /run/nut/usbhid-ups-eaton9px.pid exists)! Terminating other driver!
+Using subdriver: MGE HID 1.46
+root@peanut:~# 
+
+ root@peanut:~# sudo systemctl restart nut-server
+root@peanut:~# 
+root@peanut:~# sudo systemctl status nut-server
+● nut-server.service - Network UPS Tools - power devices information server
+     Loaded: loaded (/lib/systemd/system/nut-server.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2024-12-12 22:31:11 CET; 14s ago
+   Main PID: 2131 (upsd)
+      Tasks: 1 (limit: 76765)
+     Memory: 640.0K
+        CPU: 7ms
+     CGroup: /system.slice/nut-server.service
+             └─2131 /lib/nut/upsd -F
+
+
+```
+
+I had some trouble with nut server and restarts to fix that add some sleep to the service
+```
+vim /lib/systemd/system/nut-server.service
+[Service]
+ExecStartPre=/bin/sleep 30
+```
+
+
+To add peanut dashboard
+```
+vim /etc/peanut/settings.yml
+
+
+NUT_SERVERS:
+  - HOST: localhost
+    PORT: 3493
+    USERNAME: user
+    PASSWORD: pass
+INFLUX_HOST: ''
+INFLUX_TOKEN: ''
+INFLUX_ORG: ''
+INFLUX_BUCKET: ''
+INFLUX_INTERVAL: 10
+
+
+root@peanut:~# systemctl restart peanut.service 
+
+```
+
+To access it 
+http://lxcIP:3000 with the credentials user/pass
+
+
+I still needs to configure a lot so I'll edit the post later, but I think It has not reason to not work.
+```
+/etc/nut/upsmon.conf 
+```
