@@ -1,4 +1,4 @@
-// content from https://raw.githubusercontent.com/pixeltris/TwitchAdSolutions/master/video-swap-new/video-swap-new-ublock-origin.js copied to get
+// content from https://raw.githubusercontent.com/pixeltris/TwitchAdSolutions/master/video-swap-new/video-swap-new-ublock-origin.js copied to prevent supply chain attack
 //full tutorial https://github.com/pixeltris/TwitchAdSolutions
 twitch-videoad.js text/javascript
 (function() {
